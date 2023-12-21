@@ -52,7 +52,7 @@
         create: yes
       when: ansible_facts['distribution'] == "Ubuntu"
 
-    - name: update apt acache
+    - name: update apt cache
       apt:
         update_cache: yes
       when: ansible_facts['distribution'] == "Ubuntu"
@@ -79,6 +79,11 @@
     # Add the repository
     - name: Add the repository
       shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      when: ansible_facts['distribution'] == "Centos"
+
+    - name: update yum cache
+      yum:
+        update_cache: yes
       when: ansible_facts['distribution'] == "Centos"
 
     # Install Docker 
