@@ -1,4 +1,4 @@
-- hosts: all
+- hosts: localhost
   become: yes
   tasks:
     # For non-Gnome Desktop environments
@@ -35,16 +35,20 @@
       when: ansible_facts['distribution'] == "Ubuntu"
 
     - name: Add Docker GPG key
-      command: |
+      # '>' is used for execution
+      shell: >
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-        chmod a+r /etc/apt/keyrings/docker.gpg
       when: ansible_facts['distribution'] == "Ubuntu"
-    
+
+    - name: Set permissions on Docker GPG key
+      command: "sudo chmod a+r /etc/apt/keyrings/docker.gpg"
+      when: ansible_facts['distribution'] == "Ubuntu"
+
     - name: Add the repository to apt sources
       lineinfile:
         path: /etc/apt/sources.list.d/docker.list
-        line: |
-          deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        # '|' is used for multiple-line
+        line: deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
         create: yes
       when: ansible_facts['distribution'] == "Ubuntu"
 
@@ -62,37 +66,36 @@
           - containerd.io
           - docker-buildx-plugin
           - docker-compose-plugin
+        state: present
       when: ansible_facts['distribution'] == "Ubuntu"
 
     # Install yum-utils
     - name: Install yum-utils
       yum:
-        name:
-          - name: yum-utils
-            state: present
+        name: yum-utils
+        state: present
       when: ansible_facts['distribution'] == "Centos"
       
     # Add the repository
     - name: Add the repository
-      command: |
-        yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
       when: ansible_facts['distribution'] == "Centos"
 
     # Install Docker 
     - name: Install docker
       yum:
-        - name:
-            - docker-ce
-            - docker-ce-cli
-            - containerd.io
-            - docker-buildx-plugin
-            - docker-compose-plugin
-          state: present
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
       when: ansible_facts['distribution'] == "Centos"
     
     # start Docker service
     - name: Start Service
       service:
-        - name: docker
-          state: started
-          enabled: yes
+        name: docker
+        state: started
+        enabled: yes
