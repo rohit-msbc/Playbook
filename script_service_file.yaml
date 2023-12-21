@@ -1,0 +1,17 @@
+- hosts: all
+  become: yes
+  tasks: 
+    - name: 'Execute a script'
+      script: '/tmp/install_script.sh'
+
+    - name: 'Start the service'
+      service:
+        name: 'nginx'
+        state: 'started'
+
+    - name: 'Update /var/www/html/index.html'
+      lineinfile:
+        path: /var/www/html/index.html
+        line: 'Welcome to ansible'
+        # create a file if not exists
+        create: true
