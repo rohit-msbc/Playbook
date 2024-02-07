@@ -1,0 +1,44 @@
+- name: upgrade_ubuntu_23.04
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: update packages cache
+      apt:
+        update_cache: yes
+
+    - name: upgrade all packages
+      apt:
+        upgrade: yes
+        autoremove: yes
+
+    - name: perform full system upgrade
+      apt:
+        upgrade: dist
+        autoremove: yes
+
+    - name: replace a line in release-upgrades file
+      lineinfile:
+        path: /etc/update-manager/release-upgrades
+        regexp: Prompt=lts
+        line: '#Prompt=lts'
+
+    - name: Add a line to the release-upgrades file
+      lineinfile:
+        path: /etc/update-manager/release-upgrades
+        line: Prompt=normal
+
+    - name: add repository lunar
+      ansible.builtin.apt_repository:
+        repo: deb http://archive.ubuntu.com/ubuntu/ lunar main restricted universe multiverse
+        state: present
+        filename: lunar
+
+    - name: update packages cache
+      apt:
+        update_cache: yes
+
+    - name: upgrade all packages
+      apt:
+        upgrade: yes
+        autoremove: yes
