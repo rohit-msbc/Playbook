@@ -1,0 +1,83 @@
+---
+- name: Upgrade SLURM Server to Version 23
+  hosts: all
+  become: yes
+  vars:
+    mysql_user: your_mysql_username
+    mysql_password: your_mysql_password
+
+  tasks:
+    - name: Get current date and time
+      ansible.builtin.set_fact:
+        current_datetime: "{{ lookup('pipe', 'date +%Y-%m-%d_%H-%M-%S') }}"
+
+    - name: Create backup directory
+      file:
+        path: /tmp/slurm_backup/
+        state: directory
+        mode: '0755'
+
+    - name: Dump MySQL databases
+      command: >
+        mysqldump
+        --user={{ mysql_user }}
+        --password={{ mysql_password }}
+        --all-databases
+        --single-transaction
+        --quick
+        > /tmp/slurm_backup/{{ inventory_hostname }}-{{ current_datetime }}.sql
+
+    - name: Stop SLURM services
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+        enabled: no
+      loop:
+        - slurmctld
+        - slurmd    
+
+    - name: Download SLURM
+      get_url:
+        url: "https://download.schedmd.com/slurm/slurm-23.11-latest.tar.bz2"
+        dest: "/tmp/slurm-23.11-latest.tar.bz2"
+        validate_certs: no
+
+    - name: Extract SLURM
+      unarchive:
+        src: "/tmp/slurm-23.11-latest.tar.bz2"
+        dest: "/tmp"
+        remote_src: yes
+
+    - name: Install dependencies
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - gcc
+        - make
+        - libmunge-dev
+        - libssl-dev
+        - libpam-dev
+        - perl
+        - libswitch-perl
+        - libreadline-dev
+        - rpm
+        - libnuma-dev
+        - munge
+        - libmunge-dev
+        - libmunge2
+        - slurmdbd
+
+    - name: Compile and install SLURM
+      shell: |
+        cd /tmp/slurm-23.11.3
+        ./configure && make && make install
+
+    - name: Start SLURM services
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - slurmctld
+        - slurmd
